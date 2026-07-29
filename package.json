@@ -4,12 +4,18 @@
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.8.0",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "sass": "^1.102.0",
+    "stylelint": "^17.14.1",
+    "stylelint-config-standard-scss": "^17.0.0"
   },
   "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "lint:js": "eslint .",
+    "lint:js:fix": "eslint . --fix",
+    "lint:scss": "stylelint \"src/**/*.scss\"",
+    "lint:scss:fix": "stylelint \"src/**/*.scss\" --fix",
+    "format": "prettier --write \"**/*.{js,scss,html,json}\"",
+    "build:css": "sass src/:dist/css/",
+    "watch:css": "sass --watch src/:dist/css/"
   }
 }
