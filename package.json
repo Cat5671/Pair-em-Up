@@ -1,13 +1,22 @@
 {
+  "type": "module",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/mini-css-extract-plugin": "^2.5.0",
+    "css-loader": "^7.1.4",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.8.0",
+    "html-webpack-plugin": "^5.6.8",
     "prettier": "^3.9.6",
     "sass": "^1.102.0",
+    "sass-loader": "^17.0.0",
+    "style-loader": "^4.0.0",
     "stylelint": "^17.14.1",
-    "stylelint-config-standard-scss": "^17.0.0"
+    "stylelint-config-standard-scss": "^17.0.0",
+    "webpack": "^5.109.2",
+    "webpack-cli": "^7.2.2",
+    "webpack-dev-server": "^5.2.6"
   },
   "scripts": {
     "lint:js": "eslint .",
@@ -16,6 +25,8 @@
     "lint:scss:fix": "stylelint \"src/**/*.scss\" --fix",
     "format": "prettier --write \"**/*.{js,scss,html,json}\"",
     "build:css": "sass src/:dist/css/",
-    "watch:css": "sass --watch src/:dist/css/"
+    "watch:css": "sass --watch src/:dist/css/",
+    "build": "webpack --mode production",
+    "dev": "webpack serve --mode development"
   }
 }
