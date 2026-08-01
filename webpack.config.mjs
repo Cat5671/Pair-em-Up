@@ -33,8 +33,7 @@ export default {
     rules: [
       {
         test: /\.(scss|css)$/,
-        use: [
- !
+        use: [ 
           MiniCssExtractPlugin.loader, 
           'css-loader',
           'sass-loader'
