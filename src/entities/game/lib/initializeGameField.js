@@ -1,6 +1,6 @@
-import { shuffle } from '../../../shared/array/shuffle.js';
-import { getRandomNumber } from '../../../shared/getRandomNumber.js';
-import { chunk } from '../../../shared/array/chunk.js';
+import { shuffle } from '@/shared/array/shuffle.js';
+import { getRandomNumber } from '@/shared/getRandomNumber.js';
+import { chunk } from '@/shared/array/chunk.js';
 
 const CLASSIC_GRID = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19,
@@ -12,7 +12,7 @@ const INITIAL_CELLS_COUNT = 27;
  * @param {Array<Number>} array
  * @returns {Array<Number>}
  */
-export function splitNumbersToDigits(array) {
+function splitNumbersToDigits(array) {
   const newArray = [];
   for (let elem of array) {
     if (elem > 10) {
