@@ -1,12 +1,7 @@
 import { shuffle } from '@/shared/array/shuffle.js';
 import { getRandomNumber } from '@/shared/getRandomNumber.js';
-import { chunk } from '@/shared/array/chunk.js';
-
-const CLASSIC_GRID = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-];
-const CELLS_PER_ROW = 9;
-const INITIAL_CELLS_COUNT = 27;
+import { chunk } from '@/shared/array/chunk.js'; 
+import { CLASSIC_GRID, INITIAL_CELLS_COUNT, CELLS_PER_ROW } from '../config/constants.js';
 
 /**
  * @param {Array<Number>} array

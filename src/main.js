@@ -1,3 +1,3 @@
-import { renderGameBoard, initializeGameField } from './entities/game/index.js';
+import { createGameWidget } from './widgets/gameBoardWidget/createGameWidget.js';
 
-document.body.prepend(renderGameBoard(initializeGameField('random')));
+document.body.prepend(createGameWidget('classic'));

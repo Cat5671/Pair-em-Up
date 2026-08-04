@@ -24,10 +24,13 @@
   padding: 20px;
   border: 1px solid black;
 
+  &--crossed {
+    pointer-events: none;
+  }
+
   &--active {
     background-color: #c8d6b0;
     border: 1px solid #c8d6b0;
-    pointer-events: none;
   }
 
   &:hover {
