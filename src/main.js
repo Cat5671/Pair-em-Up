@@ -1,3 +1,3 @@
-import { createGameWidget } from './widgets/gameBoardWidget/createGameWidget.js';
+import { renderGamePage } from '@/pages/game';
 
-document.body.prepend(createGameWidget('classic'));
+document.body.prepend(renderGamePage());

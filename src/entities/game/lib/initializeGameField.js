@@ -1,7 +1,11 @@
 import { shuffle } from '@/shared/array/shuffle.js';
 import { getRandomNumber } from '@/shared/getRandomNumber.js';
-import { chunk } from '@/shared/array/chunk.js'; 
-import { CLASSIC_GRID, INITIAL_CELLS_COUNT, CELLS_PER_ROW } from '../config/constants.js';
+import { chunk } from '@/shared/array/chunk.js';
+import {
+  CLASSIC_GRID,
+  INITIAL_CELLS_COUNT,
+  CELLS_PER_ROW,
+} from '../config/constants.js';
 
 /**
  * @param {Array<Number>} array

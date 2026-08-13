@@ -1,26 +1,37 @@
-import { renderGameBoard, initializeGameField } from '@/entities/game';
-import { isAdjacentCells, getScore, isValidPair } from '@/features/matchCells';
-import { EMPTY_CELL } from '@/entities/game';
+// @ts-check
+import {
+  renderGameBoard,
+  renderGameCell,
+  EMPTY_CELL,
+  CELLS_PER_ROW,
+} from '@/entities/game';
+import { isAdjacentCells, isValidPair } from '@/features/matchCells';
 
 /**
- * @param {'classic' | 'random' | 'chaotic'} mode
- * @returns {HTMLElement}
+ * @param {Array<Array<Number>>} field
+ * @param {{ (firstCell: { row: number; col: number; value: number; }, secondCell: { row: number; col: number; value: number; }): void; (arg0: { row: number; col: number; value: number; }, arg1: { row: number; col: number; value: number; }): void; }} handleMatch
+ * @returns {{element: HTMLElement, updateCellValues: () => void;addNewCells: (i: Number, j: Number) => void;removeCells: (i: Number, j: Number) => void;getFirstChosenCell: () => {i: number;j: number;value: number;} | null;clearCell: (i: Number, j: Number) => void;returnCellNumber: (row: Number, col: Number, value: Number) => void;}}
  */
-export function createGameWidget(mode = 'classic') {
-  let field = initializeGameField(mode);
-  let score = 0;
+export function createGameWidget(field, handleMatch) {
   /**
    * @type {{ i: number; j: number; value: number} | null}
    */
   let firstChosenCell = null;
+  /**
+   * @type {HTMLElement | null}
+   */
+  let firstCell = null;
+
   const gameBoard = renderGameBoard(field, handleCellClick);
 
-  const getChosenCell = function (
-    /** @type {Number} */ row,
-    /** @type {Number} */ col
-  ) {
+  /**
+   * @param {number} row
+   * @param {number} col
+   * @returns {HTMLElement | null}
+   */
+  function getChosenCell(row, col) {
     return gameBoard.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-  };
+  }
 
   /**
    * @param {Number} i
@@ -30,40 +41,110 @@ export function createGameWidget(mode = 'classic') {
   function handleCellClick(i, j, value) {
     if (!firstChosenCell) {
       firstChosenCell = { i, j, value };
-      getChosenCell(i, j)?.classList.add('cell--active');
+      firstCell = getChosenCell(i, j);
+      if (!firstCell) return;
+      firstCell.classList.add('cell--active');
       return;
-    } else if (firstChosenCell.i === i && firstChosenCell.j === j) {
-      getChosenCell(i, j)?.classList.remove('cell--active');
-      firstChosenCell = null;
-    } else {
+    } else if (firstChosenCell.i !== i || firstChosenCell.j !== j) {
       const value1 = firstChosenCell.value;
       const value2 = field[i][j];
 
-      const firstCell = getChosenCell(firstChosenCell.i, firstChosenCell.j);
-      const secondCell = getChosenCell(i, j);
-      if (!firstCell || !secondCell) return;
-
       if (
         isValidPair(value1, value2) &&
-        isAdjacentCells(firstChosenCell.i, firstChosenCell.j, i, j, field)
+        isAdjacentCells(firstChosenCell.i, firstChosenCell.j, i, j, field) &&
+        handleMatch
       ) {
-        field[firstChosenCell.i][firstChosenCell.j] = EMPTY_CELL;
-        field[i][j] = EMPTY_CELL;
-
-        firstCell.classList.add('cell--crossed');
-        secondCell.classList.add('cell--crossed');
-
-        firstCell.textContent = '';
-        secondCell.textContent = '';
-
-        score += getScore(value1, value2);
-
-        // eslint-disable-next-line no-console
-        console.log(score);
+        handleMatch(
+          { row: firstChosenCell.i, col: firstChosenCell.j, value: value1 },
+          { row: i, col: j, value: value2 }
+        );
       }
-      firstCell.classList.remove('cell--active');
+    } else {
+      firstCell?.classList.remove('cell--active');
       firstChosenCell = null;
+      firstCell = null;
     }
   }
-  return gameBoard;
+
+  function updateCellValues() {
+    const allCells = gameBoard.querySelectorAll('.cell');
+    for (let i = 0; i < allCells.length; i += 1) {
+      const cell = allCells[i];
+      if (!(cell instanceof HTMLElement)) continue;
+      const dataRow = cell.dataset.row;
+      const dataCol = cell.dataset.col;
+      if (!dataRow || !dataCol) continue;
+      const row = parseInt(dataRow);
+      const col = parseInt(dataCol);
+      if (field[row][col] === EMPTY_CELL) continue;
+      cell.textContent = `${field[row][col]}`;
+    }
+  }
+
+  /**
+   * @param {Number} lastRow
+   * @param {Number} cellsPerLastRow
+   * @returns {void}
+   */
+  function addNewCells(lastRow, cellsPerLastRow) {
+    const fragment = new DocumentFragment();
+    let h = cellsPerLastRow;
+    for (let i = lastRow; i < field.length; i += 1) {
+      for (let j = h; j < field[i].length; j += 1) {
+        fragment.append(renderGameCell(i, j, field[i][j]));
+      }
+      h = 0;
+    }
+    gameBoard.append(fragment);
+  }
+
+  /**
+   * @param {number} i
+   * @param {number} j
+   * @returns {void}
+   */
+  function clearCell(i, j) {
+    const cell = getChosenCell(i, j);
+    firstChosenCell = null;
+    if (!cell) return;
+    cell.textContent = '';
+    cell.classList.remove('cell--active');
+    cell.classList.add('cell--crossed');
+  }
+
+  /**
+   * @param {number} startRowInd
+   * @param {number} cellsPerStartRow
+   * @returns {void}
+   */
+  function removeCells(startRowInd, cellsPerStartRow) {
+    const allCells = gameBoard.querySelectorAll('.cell');
+    const index = startRowInd * CELLS_PER_ROW + cellsPerStartRow;
+    for (let i = index; i < allCells.length; i += 1) {
+      allCells[i].remove();
+    }
+  }
+
+  /**
+   * @param {number} row
+   * @param {number} col
+   * @param {Number} value
+   * @returns {void}
+   */
+  function returnCellNumber(row, col, value) {
+    const chosenCell = getChosenCell(row, col);
+    if (!chosenCell) return;
+    chosenCell.textContent = `${value}`;
+    chosenCell.classList.remove('cell--crossed');
+  }
+
+  return {
+    element: gameBoard,
+    updateCellValues,
+    addNewCells,
+    removeCells,
+    getFirstChosenCell: () => firstChosenCell,
+    clearCell,
+    returnCellNumber,
+  };
 }
