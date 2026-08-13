@@ -1,0 +1,18 @@
+.assist-tool {
+  border: none;
+  border-radius: 20px;
+  padding: 10px;
+  background-color: black;
+  color: white;
+  position: relative;
+  cursor: pointer;
+}
+
+.assist-tool__uses-left {
+  position: absolute;
+  border-radius: 50%;
+  background: forestgreen;
+  top: 0;
+  aspect-ratio: 1 / 1;
+  height: 16px;
+}

@@ -1,4 +1,4 @@
-import { EMPTY_CELL } from "@/entities/game";
+import { EMPTY_CELL } from '@/entities/game';
 
 /**
  * @param {Number} r
