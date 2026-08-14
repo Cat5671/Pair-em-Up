@@ -1,6 +1,7 @@
 import { createElement } from '@/shared/dom/createDomElem';
 import { mutateMatrix } from '@/shared/array/mutateMatrix.js';
 import { initializeGameField } from '@/entities/game';
+import { timer } from '@/entities/timer/timerLogic';
 import {
   addNumbersToGrid,
   shuffleField,
@@ -10,6 +11,7 @@ import {
 import { getScore } from '@/features/matchCells';
 import { createGameWidget } from '@/widgets/gameBoardWidget/createGameWidget';
 import { createAssistToolsWidget } from '@/widgets/createAssistToolsWidget';
+import { createGameInfo } from '@/widgets/gameInfo/gameInfo';
 
 /**
  * @param {'classic' | 'random' | 'chaotic'} mode
@@ -18,6 +20,8 @@ import { createAssistToolsWidget } from '@/widgets/createAssistToolsWidget';
 export function renderGamePage(mode = 'classic') {
   const gameField = initializeGameField(mode);
   let score = 0;
+  let initialTime = 0; 
+  let gameTimer = timer(initialTime);
   let hints = 0;
 
   const previousState = {
@@ -39,7 +43,7 @@ export function renderGamePage(mode = 'classic') {
      * @param {{name: 'addNumbers' | 'shuffle' | 'eraser', usesLeft: Number}| null} btnState
      * @param {{ firstCell: {row: Number, col: Number, value: Number}, secondCell: {row: Number, col: Number, value: Number} | null } | null} pair
      */
-    saveState(field, score, btnState, pair = null) {
+    saveState(field, score, btnState, pair = null) { 
       this.button = btnState ? { ...btnState } : null;
       this.field = structuredClone(field);
       this.score = score;
@@ -55,6 +59,8 @@ export function renderGamePage(mode = 'classic') {
   };
 
   const container = createElement('div', 'game-page');
+  const gameInfo = createGameInfo(mode, score);
+  gameTimer.start(gameInfo.updateTime);
 
   const handleMatch = (
     /** @type {{row: Number, col: Number, value: Number}} */ firstCell,
@@ -66,6 +72,7 @@ export function renderGamePage(mode = 'classic') {
     score += getScore(firstCell.value, secondCell.value);
     gameBoard.clearCell(firstCell.row, firstCell.col);
     gameBoard.clearCell(secondCell.row, secondCell.col);
+    gameInfo.updateScore(score);
     handleHints();
   };
 
@@ -183,6 +190,7 @@ export function renderGamePage(mode = 'classic') {
     }
 
     score = previousState.score;
+    gameInfo.updateScore(score);
     handleHints();
     previousState.clearState();
   };
@@ -196,9 +204,9 @@ export function renderGamePage(mode = 'classic') {
   };
 
   const assistTools = createAssistToolsWidget(usesLeft, handlers);
-  container.append(assistTools.element, gameBoard.element);
+  container.append(gameInfo.element, gameBoard.element, assistTools.element);
 
-  function handleHints() {
+  function handleHints() { 
     hints = findHints(gameField);
     usesLeft['hints'] = hints;
     assistTools.updateContentButton('hints', hints);
