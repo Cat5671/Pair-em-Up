@@ -1,6 +1,6 @@
 import { createElement } from '@/shared/dom/createDomElem';
 import { mutateMatrix } from '@/shared/array/mutateMatrix.js';
-import { initializeGameField } from '@/entities/game';
+import { initializeGameField, getNonZeroNumbers } from '@/entities/game';
 import {
   addNumbersToGrid,
   shuffleField,
@@ -10,12 +10,14 @@ import {
 import { getScore } from '@/features/matchCells';
 import { createGameWidget } from '@/widgets/gameBoardWidget/createGameWidget';
 import { createAssistToolsWidget } from '@/widgets/createAssistToolsWidget';
+import { createGameEndModal } from '@/widgets/gameEndModal/createGameEndModal';
 
 /**
  * @param {'classic' | 'random' | 'chaotic'} mode
+ * @param {(mode: 'classic' | 'random' | 'chaotic') => void} onRestart
  * @returns {HTMLElement}
  */
-export function renderGamePage(mode = 'classic') {
+export function renderGamePage(mode = 'classic', onRestart) {
   const gameField = initializeGameField(mode);
   let score = 0;
   let hints = 0;
@@ -54,7 +56,7 @@ export function renderGamePage(mode = 'classic') {
     },
   };
 
-  const container = createElement('div', 'game-page');
+  let container = createElement('div', 'game-page');
 
   const handleMatch = (
     /** @type {{row: Number, col: Number, value: Number}} */ firstCell,
@@ -64,9 +66,12 @@ export function renderGamePage(mode = 'classic') {
     removeNumber(firstCell.row, firstCell.col, gameField);
     removeNumber(secondCell.row, secondCell.col, gameField);
     score += getScore(firstCell.value, secondCell.value);
+    console.log(score);
     gameBoard.clearCell(firstCell.row, firstCell.col);
     gameBoard.clearCell(secondCell.row, secondCell.col);
     handleHints();
+
+    if (score >= 100) createGameEndModal('You win!', () => onRestart(mode));
   };
 
   const gameBoard = createGameWidget(gameField, handleMatch);
@@ -98,6 +103,17 @@ export function renderGamePage(mode = 'classic') {
 
     usesLeft['addNumbers'] = usesLeft['addNumbers'] - 1;
     assistTools.updateContentButton('addNumbers', usesLeft['addNumbers']);
+
+    if (gameField.length > 50)
+      document.body.prepend(
+        createGameEndModal('You lost!', () => onRestart(mode))
+      );
+    if (
+      hints === 0 &&
+      getNonZeroNumbers(gameField).length === 0 &&
+      !previousState.pair
+    )
+      createGameEndModal('You lost!', () => onRestart(mode));
   };
 
   const handleShuffle = () => {
@@ -118,6 +134,12 @@ export function renderGamePage(mode = 'classic') {
 
     usesLeft['shuffle'] = usesLeft['shuffle'] - 1;
     assistTools.updateContentButton('shuffle', usesLeft['shuffle']);
+    if (
+      hints === 0 &&
+      getNonZeroNumbers(gameField).length === 0 &&
+      !previousState.pair
+    )
+      createGameEndModal('You lost!', () => onRestart(mode));
     return true;
   };
 
@@ -205,5 +227,6 @@ export function renderGamePage(mode = 'classic') {
   }
 
   handleHints();
+
   return container;
 }
