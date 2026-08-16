@@ -7,11 +7,13 @@ import {
   shuffleField,
   removeNumber,
   findHints,
+  createGameState,
+  createAssistToolsState,
 } from '@/features/assistTools';
 import { getScore } from '@/features/matchCells';
 import { createGameWidget } from '@/widgets/gameBoardWidget/createGameWidget';
 import { createAssistToolsWidget } from '@/widgets/createAssistToolsWidget';
-import { createGameInfo } from '@/widgets/gameInfo/gameInfo';
+import { createGameInfo } from '@/widgets/gameInfo/createGameInfo';
 
 /**
  * @param {'classic' | 'random' | 'chaotic'} mode
@@ -20,46 +22,14 @@ import { createGameInfo } from '@/widgets/gameInfo/gameInfo';
 export function renderGamePage(mode = 'classic') {
   const gameField = initializeGameField(mode);
   let score = 0;
-  let initialTime = 0; 
+  let initialTime = 0;
   let gameTimer = timer(initialTime);
   let hints = 0;
-
-  const previousState = {
-    /** @type {{name: 'addNumbers' | 'shuffle' | 'eraser', usesLeft: Number}| null} */
-    button: null,
-
-    /** @type {Array<Array<Number>> | null} */
-    field: null,
-
-    /** @type {Number}  */
-    score: 0,
-
-    /** @type {{ firstCell: {row: Number, col: Number, value: Number}, secondCell: {row: Number, col: Number, value: Number} | null } | null} */
-    pair: null,
-
-    /**
-     * @param {Array<Array<Number>> | null} field
-     * @param {Number} score
-     * @param {{name: 'addNumbers' | 'shuffle' | 'eraser', usesLeft: Number}| null} btnState
-     * @param {{ firstCell: {row: Number, col: Number, value: Number}, secondCell: {row: Number, col: Number, value: Number} | null } | null} pair
-     */
-    saveState(field, score, btnState, pair = null) { 
-      this.button = btnState ? { ...btnState } : null;
-      this.field = structuredClone(field);
-      this.score = score;
-      this.pair = !pair ? null : { ...pair };
-    },
-
-    clearState() {
-      this.button = null;
-      this.field = null;
-      this.score = 0;
-      this.pair = null;
-    },
-  };
+  const previousState = createGameState();
 
   const container = createElement('div', 'game-page');
   const gameInfo = createGameInfo(mode, score);
+
   gameTimer.start(gameInfo.updateTime);
 
   const handleMatch = (
@@ -77,23 +47,21 @@ export function renderGamePage(mode = 'classic') {
   };
 
   const gameBoard = createGameWidget(gameField, handleMatch);
-  const usesLeft = {
+
+  const usesLeft = createAssistToolsState({
     addNumbers: 10,
     shuffle: 5,
     eraser: 5,
     revert: Infinity,
     hints: 0,
-  };
+  });
 
   const handleAddNumbers = () => {
-    if (usesLeft['addNumbers'] <= 0) {
-      usesLeft['addNumbers'] = 0;
-      return false;
-    }
+    if (!usesLeft.checkUsesLeft('addNumbers')) return;
 
     previousState.saveState(gameField, score, {
       name: 'addNumbers',
-      usesLeft: usesLeft['addNumbers'],
+      usesLeft: usesLeft.getUsesLeft('addNumbers'),
     });
 
     const lastRow = gameField.length - 1;
@@ -103,19 +71,19 @@ export function renderGamePage(mode = 'classic') {
 
     handleHints();
 
-    usesLeft['addNumbers'] = usesLeft['addNumbers'] - 1;
-    assistTools.updateContentButton('addNumbers', usesLeft['addNumbers']);
+    usesLeft.decrement('addNumbers');
+    assistTools.updateContentButton(
+      'addNumbers',
+      usesLeft.getUsesLeft('addNumbers')
+    );
   };
 
   const handleShuffle = () => {
-    if (usesLeft['shuffle'] <= 0) {
-      usesLeft['shuffle'] = 0;
-      return false;
-    }
+    if (!usesLeft.checkUsesLeft('shuffle')) return;
 
     previousState.saveState(gameField, score, {
       name: 'shuffle',
-      usesLeft: usesLeft['shuffle'],
+      usesLeft: usesLeft.getUsesLeft('shuffle'),
     });
 
     shuffleField(gameField);
@@ -123,16 +91,13 @@ export function renderGamePage(mode = 'classic') {
 
     handleHints();
 
-    usesLeft['shuffle'] = usesLeft['shuffle'] - 1;
-    assistTools.updateContentButton('shuffle', usesLeft['shuffle']);
+    usesLeft.decrement('shuffle');
+    assistTools.updateContentButton('shuffle', usesLeft.getUsesLeft('shuffle'));
     return true;
   };
 
   const handleEraser = () => {
-    if (usesLeft['eraser'] <= 0) {
-      usesLeft['eraser'] = 0;
-      return false;
-    }
+    if (!usesLeft.checkUsesLeft('eraser')) return;
 
     const firstCell = gameBoard.getFirstChosenCell();
     if (!firstCell) return false;
@@ -141,7 +106,7 @@ export function renderGamePage(mode = 'classic') {
     previousState.saveState(
       gameField,
       score,
-      { name: 'eraser', usesLeft: usesLeft['eraser'] },
+      { name: 'eraser', usesLeft: usesLeft.getUsesLeft('eraser') },
       {
         firstCell: { row: i, col: j, value: gameField[i][j] },
         secondCell: null,
@@ -152,18 +117,19 @@ export function renderGamePage(mode = 'classic') {
 
     handleHints();
 
-    usesLeft['eraser'] = usesLeft['eraser'] - 1;
-    assistTools.updateContentButton('eraser', usesLeft['eraser']);
+    usesLeft.decrement('eraser');
+    assistTools.updateContentButton('eraser', usesLeft.getUsesLeft('eraser'));
     return true;
   };
 
   const handleRevert = () => {
-    if (!previousState.field) return;
-    mutateMatrix(gameField, previousState.field);
+    const previousGameState = previousState.getState();
+    if (!previousGameState.field) return;
+    mutateMatrix(gameField, previousGameState.field);
 
-    const button = previousState.button;
-    const firstCell = previousState.pair?.firstCell;
-    const secondCell = previousState.pair?.secondCell;
+    const button = previousGameState.button;
+    const firstCell = previousGameState.pair?.firstCell;
+    const secondCell = previousGameState.pair?.secondCell;
 
     if (button) {
       if (button.name === 'addNumbers') {
@@ -178,7 +144,7 @@ export function renderGamePage(mode = 'classic') {
           firstCell.value
         );
       }
-      usesLeft[button.name] = button.usesLeft;
+      usesLeft.setUsesLeft(button.name, button.usesLeft);
       assistTools.updateContentButton(button.name, button.usesLeft);
     } else if (firstCell && secondCell) {
       gameBoard.returnCellNumber(firstCell.row, firstCell.col, firstCell.value);
@@ -189,7 +155,7 @@ export function renderGamePage(mode = 'classic') {
       );
     }
 
-    score = previousState.score;
+    score = previousGameState.score;
     gameInfo.updateScore(score);
     handleHints();
     previousState.clearState();
@@ -203,12 +169,15 @@ export function renderGamePage(mode = 'classic') {
     hints: null,
   };
 
-  const assistTools = createAssistToolsWidget(usesLeft, handlers);
+  const assistTools = createAssistToolsWidget(
+    usesLeft.getAllUsesLeft(),
+    handlers
+  );
   container.append(gameInfo.element, gameBoard.element, assistTools.element);
 
-  function handleHints() { 
+  function handleHints() {
     hints = findHints(gameField);
-    usesLeft['hints'] = hints;
+    usesLeft.setUsesLeft('hints', hints);
     assistTools.updateContentButton('hints', hints);
   }
 
