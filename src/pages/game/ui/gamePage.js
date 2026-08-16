@@ -1,3 +1,8 @@
+import {
+  saveAutosave,
+  loadAutosave,
+  clearAutosave,
+} from '@/shared/storage/gameStorage';
 import { createElement } from '@/shared/dom/createDomElem';
 import { mutateMatrix } from '@/shared/array/mutateMatrix.js';
 import { initializeGameField } from '@/entities/game';
@@ -20,12 +25,24 @@ import { createGameInfo } from '@/widgets/gameInfo/createGameInfo';
  * @returns {HTMLElement}
  */
 export function renderGamePage(mode = 'classic') {
-  const gameField = initializeGameField(mode);
-  let score = 0;
-  let initialTime = 0;
+  const savedData = loadAutosave();
+
+  // @ts-ignore
+  mode = savedData ? savedData.mode : mode;
+  // @ts-ignore
+  const gameField = savedData ? savedData.field : initializeGameField(mode);
+  // @ts-ignore
+  let score = savedData ? savedData.score : 0;
+  // @ts-ignore
+  let initialTime = savedData ? savedData.initialTime : 0;
   let gameTimer = timer(initialTime);
   let hints = 0;
   const previousState = createGameState();
+  if (savedData) {
+    // @ts-ignore
+    const h = savedData.history;
+    previousState.saveState(h.field, h.score, h.button, h.pair);
+  }
 
   const container = createElement('div', 'game-page');
   const gameInfo = createGameInfo(mode, score);
@@ -44,17 +61,16 @@ export function renderGamePage(mode = 'classic') {
     gameBoard.clearCell(secondCell.row, secondCell.col);
     gameInfo.updateScore(score);
     handleHints();
+
+    triggerAutosave();
   };
 
   const gameBoard = createGameWidget(gameField, handleMatch);
 
-  const usesLeft = createAssistToolsState({
-    addNumbers: 10,
-    shuffle: 5,
-    eraser: 5,
-    revert: Infinity,
-    hints: 0,
-  });
+  const usesLeft = savedData
+    ? // @ts-ignore
+      createAssistToolsState(savedData.tools)
+    : createAssistToolsState();
 
   const handleAddNumbers = () => {
     if (!usesLeft.checkUsesLeft('addNumbers')) return;
@@ -76,6 +92,8 @@ export function renderGamePage(mode = 'classic') {
       'addNumbers',
       usesLeft.getUsesLeft('addNumbers')
     );
+
+    triggerAutosave();
   };
 
   const handleShuffle = () => {
@@ -93,6 +111,8 @@ export function renderGamePage(mode = 'classic') {
 
     usesLeft.decrement('shuffle');
     assistTools.updateContentButton('shuffle', usesLeft.getUsesLeft('shuffle'));
+
+    triggerAutosave();
     return true;
   };
 
@@ -119,6 +139,7 @@ export function renderGamePage(mode = 'classic') {
 
     usesLeft.decrement('eraser');
     assistTools.updateContentButton('eraser', usesLeft.getUsesLeft('eraser'));
+    triggerAutosave();
     return true;
   };
 
@@ -159,6 +180,7 @@ export function renderGamePage(mode = 'classic') {
     gameInfo.updateScore(score);
     handleHints();
     previousState.clearState();
+    triggerAutosave();
   };
 
   const handlers = {
@@ -181,6 +203,19 @@ export function renderGamePage(mode = 'classic') {
     assistTools.updateContentButton('hints', hints);
   }
 
+  function triggerAutosave() {
+    const currentState = {
+      mode: mode,
+      initialTime: gameTimer.getTime(),
+      score: score,
+      field: gameField,
+      tools: usesLeft.getAllUsesLeft(),
+      history: previousState.getState(),
+    };
+    saveAutosave(currentState);
+  }
+
   handleHints();
+  triggerAutosave();
   return container;
 }

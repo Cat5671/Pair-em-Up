@@ -29,6 +29,9 @@ export function createAssistToolsWidget(usesLeft, handlers) {
     'revert',
     handlers['revert']
   );
+
+  revertBtn.setUsesLeft('∞');
+
   const hintsBtn = renderAssistButton(
     usesLeft['hints'],
     'hints',

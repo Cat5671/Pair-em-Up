@@ -11,11 +11,7 @@ export function renderAssistButton(usesLeft, btnName, onClick) {
   const button = createElement('button', 'assist-tool');
 
   const buttonName = createElement('span', 'assist-tool__title', `${btnName}`);
-  const uses = createElement(
-    'span',
-    'assist-tool__uses-left',
-    `${usesLeft === Infinity ? '∞' : usesLeft}`
-  );
+  const uses = createElement('span', 'assist-tool__uses-left', `${usesLeft}`);
   button.dataset.name = btnName;
   button.append(buttonName, uses);
 
