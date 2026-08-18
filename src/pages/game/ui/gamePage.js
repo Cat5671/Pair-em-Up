@@ -17,15 +17,17 @@ import {
 } from '@/features/assistTools';
 import { getScore } from '@/features/matchCells';
 import { createGameWidget } from '@/widgets/gameBoardWidget/createGameWidget';
-import { createAssistToolsWidget } from '@/widgets/assistTools/createAssistToolsWidget';
+import { createAssistToolsWidget } from '@/widgets/createAssistToolsWidget';
+import { createGameEndModal } from '@/widgets/gameEndModal/createGameEndModal'; 
 import { createGameInfo } from '@/widgets/gameInfo/createGameInfo';
 import './gamePage.scss';
 
 /**
  * @param {'classic' | 'random' | 'chaotic'} mode
+ * @param {(mode: 'classic' | 'random' | 'chaotic') => void} onRestart
  * @returns {HTMLElement}
  */
-export function renderGamePage(mode = 'classic') {
+export function renderGamePage(mode = 'classic', onRestart) { 
   const savedData = loadAutosave();
 
   // @ts-ignore
@@ -59,10 +61,13 @@ export function renderGamePage(mode = 'classic') {
     removeNumber(firstCell.row, firstCell.col, gameField);
     removeNumber(secondCell.row, secondCell.col, gameField);
     score += getScore(firstCell.value, secondCell.value);
+    console.log(score);
     gameBoard.clearCell(firstCell.row, firstCell.col);
     gameBoard.clearCell(secondCell.row, secondCell.col);
     gameInfo.updateScore(score);
     handleHints();
+
+    if (score >= 100) createGameEndModal('You win!', () => onRestart(mode));
     triggerAutosave();
     assistTools.toggleButtonDisabled('revert', false);
   };
@@ -95,6 +100,16 @@ export function renderGamePage(mode = 'classic') {
       usesLeft.getUsesLeft('addNumbers')
     );
 
+    if (gameField.length > 50)
+      document.body.prepend(
+        createGameEndModal('You lost!', () => onRestart(mode))
+      );
+    if (
+      hints === 0 &&
+      getNonZeroNumbers(gameField).length === 0 &&
+      !previousState.pair
+    )
+      createGameEndModal('You lost!', () => onRestart(mode)); 
     triggerAutosave();
 
     if (usesLeft.getUsesLeft('addNumbers') > 0) return;
@@ -118,7 +133,12 @@ export function renderGamePage(mode = 'classic') {
 
     usesLeft.decrement('shuffle');
     assistTools.updateContentButton('shuffle', usesLeft.getUsesLeft('shuffle'));
-
+    if (
+      hints === 0 &&
+      getNonZeroNumbers(gameField).length === 0 &&
+      !previousState.pair
+    )
+      createGameEndModal('You lost!', () => onRestart(mode)); 
     triggerAutosave();
 
     if (usesLeft.checkUsesLeft('shuffle')) return;
