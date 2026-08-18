@@ -25,10 +25,10 @@ export function createGameState() {
   }
 
   function clearState() {
-    this.button = null;
-    this.field = null;
-    this.score = 0;
-    this.pair = null;
+    button = null;
+    field = null;
+    score = 0;
+    pair = null;
   }
 
   function getState() {

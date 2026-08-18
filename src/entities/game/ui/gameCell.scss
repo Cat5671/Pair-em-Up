@@ -1,0 +1,33 @@
+.cell {
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--main-padding);
+  border: 1px solid var(--secondary);
+  transition:
+    background 0.3s,
+    color 0.3s,
+    border 0.3s;
+
+  &--crossed {
+    pointer-events: none;
+  }
+
+  &--active {
+    background-color: var(--primary);
+    border: 1px solid var(--primary);
+  }
+
+  &:hover {
+    background-color: var(--primary);
+    border: 1px solid var(--border-green);
+    color: var(--border-green);
+    cursor: pointer;
+  }
+
+  @media (max-width: 625px) {
+    padding: 10px;
+  }
+}

@@ -1,18 +1,34 @@
 .assist-tool {
   border: none;
-  border-radius: 20px;
+  border-radius: 50%;
   padding: 10px;
-  background-color: black;
-  color: white;
+  background-color: var(--secondary);
+  color: #ffffff;
   position: relative;
   cursor: pointer;
+  transition: background 0.3s;
+
+  &--disabled {
+    background-color: var(--disable-secondary);
+    pointer-events: none;
+  }
 }
 
 .assist-tool__uses-left {
   position: absolute;
   border-radius: 50%;
-  background: forestgreen;
+  background: var(--active-green);
   top: 0;
+  right: 0;
   aspect-ratio: 1 / 1;
   height: 16px;
+  transition: background 0.3s;
+
+  &--disabled {
+    background-color: var(--disable-green);
+  }
+}
+
+.assist-tool__icon {
+  display: block;
 }

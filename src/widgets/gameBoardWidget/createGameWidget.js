@@ -10,9 +10,10 @@ import { isAdjacentCells, isValidPair } from '@/features/matchCells';
 /**
  * @param {Array<Array<Number>>} field
  * @param {{ (firstCell: { row: number; col: number; value: number; }, secondCell: { row: number; col: number; value: number; }): void; (arg0: { row: number; col: number; value: number; }, arg1: { row: number; col: number; value: number; }): void; }} handleMatch
+ * @param {(isDisable: Boolean) => void} onCellChosen
  * @returns {{element: HTMLElement, updateCellValues: () => void;addNewCells: (i: Number, j: Number) => void;removeCells: (i: Number, j: Number) => void;getFirstChosenCell: () => {i: number;j: number;value: number;} | null;clearCell: (i: Number, j: Number) => void;returnCellNumber: (row: Number, col: Number, value: Number) => void;}}
  */
-export function createGameWidget(field, handleMatch) {
+export function createGameWidget(field, handleMatch, onCellChosen) {
   /**
    * @type {{ i: number; j: number; value: number} | null}
    */
@@ -44,6 +45,7 @@ export function createGameWidget(field, handleMatch) {
       firstCell = getChosenCell(i, j);
       if (!firstCell) return;
       firstCell.classList.add('cell--active');
+      onCellChosen(false);
       return;
     } else if (firstChosenCell.i !== i || firstChosenCell.j !== j) {
       const value1 = firstChosenCell.value;
@@ -59,11 +61,12 @@ export function createGameWidget(field, handleMatch) {
           { row: i, col: j, value: value2 }
         );
       }
-    } else {
-      firstCell?.classList.remove('cell--active');
-      firstChosenCell = null;
-      firstCell = null;
     }
+
+    onCellChosen(true);
+    firstCell?.classList.remove('cell--active');
+    firstChosenCell = null;
+    firstCell = null;
   }
 
   function updateCellValues() {

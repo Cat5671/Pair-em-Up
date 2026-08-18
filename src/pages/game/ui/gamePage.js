@@ -17,8 +17,9 @@ import {
 } from '@/features/assistTools';
 import { getScore } from '@/features/matchCells';
 import { createGameWidget } from '@/widgets/gameBoardWidget/createGameWidget';
-import { createAssistToolsWidget } from '@/widgets/createAssistToolsWidget';
+import { createAssistToolsWidget } from '@/widgets/assistTools/createAssistToolsWidget';
 import { createGameInfo } from '@/widgets/gameInfo/createGameInfo';
+import './gamePage.scss';
 
 /**
  * @param {'classic' | 'random' | 'chaotic'} mode
@@ -38,7 +39,8 @@ export function renderGamePage(mode = 'classic') {
   let gameTimer = timer(initialTime);
   let hints = 0;
   const previousState = createGameState();
-  if (savedData) {
+
+  if (savedData && savedData.history && savedData.history.field) {
     // @ts-ignore
     const h = savedData.history;
     previousState.saveState(h.field, h.score, h.button, h.pair);
@@ -61,11 +63,9 @@ export function renderGamePage(mode = 'classic') {
     gameBoard.clearCell(secondCell.row, secondCell.col);
     gameInfo.updateScore(score);
     handleHints();
-
     triggerAutosave();
+    assistTools.toggleButtonDisabled('revert', false);
   };
-
-  const gameBoard = createGameWidget(gameField, handleMatch);
 
   const usesLeft = savedData
     ? // @ts-ignore
@@ -79,6 +79,8 @@ export function renderGamePage(mode = 'classic') {
       name: 'addNumbers',
       usesLeft: usesLeft.getUsesLeft('addNumbers'),
     });
+
+    assistTools.toggleButtonDisabled('revert', false);
 
     const lastRow = gameField.length - 1;
     const [row, col] = [lastRow, gameField[lastRow].length];
@@ -94,6 +96,9 @@ export function renderGamePage(mode = 'classic') {
     );
 
     triggerAutosave();
+
+    if (usesLeft.getUsesLeft('addNumbers') > 0) return;
+    assistTools.toggleButtonDisabled('addNumbers', true);
   };
 
   const handleShuffle = () => {
@@ -104,6 +109,8 @@ export function renderGamePage(mode = 'classic') {
       usesLeft: usesLeft.getUsesLeft('shuffle'),
     });
 
+    assistTools.toggleButtonDisabled('revert', false);
+
     shuffleField(gameField);
     gameBoard.updateCellValues();
 
@@ -113,6 +120,10 @@ export function renderGamePage(mode = 'classic') {
     assistTools.updateContentButton('shuffle', usesLeft.getUsesLeft('shuffle'));
 
     triggerAutosave();
+
+    if (usesLeft.checkUsesLeft('shuffle')) return;
+    assistTools.toggleButtonDisabled('shuffle', true);
+
     return true;
   };
 
@@ -132,6 +143,9 @@ export function renderGamePage(mode = 'classic') {
         secondCell: null,
       }
     );
+
+    assistTools.toggleButtonDisabled('revert', false);
+
     removeNumber(i, j, gameField);
     gameBoard.clearCell(i, j);
 
@@ -140,6 +154,11 @@ export function renderGamePage(mode = 'classic') {
     usesLeft.decrement('eraser');
     assistTools.updateContentButton('eraser', usesLeft.getUsesLeft('eraser'));
     triggerAutosave();
+
+    assistTools.toggleButtonDisabled('eraser', true);
+    if (usesLeft.checkUsesLeft('eraser')) return;
+    assistTools.toggleButtonDisabled('eraser', true);
+
     return true;
   };
 
@@ -167,6 +186,10 @@ export function renderGamePage(mode = 'classic') {
       }
       usesLeft.setUsesLeft(button.name, button.usesLeft);
       assistTools.updateContentButton(button.name, button.usesLeft);
+
+      if (button.name !== 'eraser' && usesLeft.getUsesLeft(button.name) === 1) {
+        assistTools.toggleButtonDisabled(button.name, false);
+      }
     } else if (firstCell && secondCell) {
       gameBoard.returnCellNumber(firstCell.row, firstCell.col, firstCell.value);
       gameBoard.returnCellNumber(
@@ -181,6 +204,8 @@ export function renderGamePage(mode = 'classic') {
     handleHints();
     previousState.clearState();
     triggerAutosave();
+
+    assistTools.toggleButtonDisabled('revert', true);
   };
 
   const handlers = {
@@ -195,6 +220,11 @@ export function renderGamePage(mode = 'classic') {
     usesLeft.getAllUsesLeft(),
     handlers
   );
+  const gameBoard = createGameWidget(gameField, handleMatch, (isDisable) => {
+    if (!usesLeft.checkUsesLeft('eraser')) return;
+    assistTools.toggleButtonDisabled('eraser', isDisable);
+  });
+
   container.append(gameInfo.element, gameBoard.element, assistTools.element);
 
   function handleHints() {
@@ -210,12 +240,18 @@ export function renderGamePage(mode = 'classic') {
       score: score,
       field: gameField,
       tools: usesLeft.getAllUsesLeft(),
-      history: previousState.getState(),
+      history:
+        previousState.getState() && previousState.getState().field
+          ? previousState.getState()
+          : null,
     };
     saveAutosave(currentState);
   }
 
   handleHints();
+  if (previousState.getState().field)
+    assistTools.toggleButtonDisabled('revert', false);
+  else assistTools.toggleButtonDisabled('revert', true);
   triggerAutosave();
   return container;
 }

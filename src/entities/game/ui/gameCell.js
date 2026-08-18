@@ -1,5 +1,6 @@
 import { createElement } from '@/shared/dom/createDomElem';
 import { EMPTY_CELL } from '../config/constants.js';
+import './gameCell.scss';
 
 /**
  * @param {number} i

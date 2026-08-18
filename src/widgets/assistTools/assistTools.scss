@@ -1,0 +1,22 @@
+.assist-tools {
+  position: sticky;
+  bottom: var(--main-padding);
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
+  @media (max-width: 628px) {
+    bottom: 10px;
+  }
+}
+
+.assist-tools__content {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 50px;
+}
