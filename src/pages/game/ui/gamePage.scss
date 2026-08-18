@@ -1,0 +1,9 @@
+.game-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-inline: var(--main-padding);
+
+  @media (max-width: 628px) {
+    padding-inline: 10px;
+  }
+}

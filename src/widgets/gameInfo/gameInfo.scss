@@ -1,0 +1,13 @@
+.game-info {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  position: sticky;
+  top: var(--main-padding);
+  border: 1px solid var(--secondary);
+  background: var(--primary);
+
+  @media (max-width: 628px) {
+    top: 10px;
+  }
+}

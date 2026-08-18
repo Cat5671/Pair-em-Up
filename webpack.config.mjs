@@ -39,6 +39,14 @@ export default {
           'sass-loader'
         ],
       },
+
+      {
+        test: /\.(svg|png|jpg|jpeg|gif)$/i,
+        type: 'asset/resource',
+        generator: {
+          filename: 'assets/icons/[name][ext]'  
+        }
+      }
     ],
   },
 

@@ -1,62 +1,57 @@
+import {
+  saveAutosave,
+  loadAutosave,
+  clearAutosave,
+} from '@/shared/storage/gameStorage';
 import { createElement } from '@/shared/dom/createDomElem';
 import { mutateMatrix } from '@/shared/array/mutateMatrix.js';
-import { initializeGameField, getNonZeroNumbers } from '@/entities/game';
+import { initializeGameField } from '@/entities/game';
+import { timer } from '@/entities/timer/timerLogic';
 import {
   addNumbersToGrid,
   shuffleField,
   removeNumber,
   findHints,
+  createGameState,
+  createAssistToolsState,
 } from '@/features/assistTools';
 import { getScore } from '@/features/matchCells';
 import { createGameWidget } from '@/widgets/gameBoardWidget/createGameWidget';
 import { createAssistToolsWidget } from '@/widgets/createAssistToolsWidget';
-import { createGameEndModal } from '@/widgets/gameEndModal/createGameEndModal';
+import { createGameEndModal } from '@/widgets/gameEndModal/createGameEndModal'; 
+import { createGameInfo } from '@/widgets/gameInfo/createGameInfo';
+import './gamePage.scss';
 
 /**
  * @param {'classic' | 'random' | 'chaotic'} mode
  * @param {(mode: 'classic' | 'random' | 'chaotic') => void} onRestart
  * @returns {HTMLElement}
  */
-export function renderGamePage(mode = 'classic', onRestart) {
-  const gameField = initializeGameField(mode);
-  let score = 0;
+export function renderGamePage(mode = 'classic', onRestart) { 
+  const savedData = loadAutosave();
+
+  // @ts-ignore
+  mode = savedData ? savedData.mode : mode;
+  // @ts-ignore
+  const gameField = savedData ? savedData.field : initializeGameField(mode);
+  // @ts-ignore
+  let score = savedData ? savedData.score : 0;
+  // @ts-ignore
+  let initialTime = savedData ? savedData.initialTime : 0;
+  let gameTimer = timer(initialTime);
   let hints = 0;
+  const previousState = createGameState();
 
-  const previousState = {
-    /** @type {{name: 'addNumbers' | 'shuffle' | 'eraser', usesLeft: Number}| null} */
-    button: null,
+  if (savedData && savedData.history && savedData.history.field) {
+    // @ts-ignore
+    const h = savedData.history;
+    previousState.saveState(h.field, h.score, h.button, h.pair);
+  }
 
-    /** @type {Array<Array<Number>> | null} */
-    field: null,
+  const container = createElement('div', 'game-page');
+  const gameInfo = createGameInfo(mode, score);
 
-    /** @type {Number}  */
-    score: 0,
-
-    /** @type {{ firstCell: {row: Number, col: Number, value: Number}, secondCell: {row: Number, col: Number, value: Number} | null } | null} */
-    pair: null,
-
-    /**
-     * @param {Array<Array<Number>> | null} field
-     * @param {Number} score
-     * @param {{name: 'addNumbers' | 'shuffle' | 'eraser', usesLeft: Number}| null} btnState
-     * @param {{ firstCell: {row: Number, col: Number, value: Number}, secondCell: {row: Number, col: Number, value: Number} | null } | null} pair
-     */
-    saveState(field, score, btnState, pair = null) {
-      this.button = btnState ? { ...btnState } : null;
-      this.field = structuredClone(field);
-      this.score = score;
-      this.pair = !pair ? null : { ...pair };
-    },
-
-    clearState() {
-      this.button = null;
-      this.field = null;
-      this.score = 0;
-      this.pair = null;
-    },
-  };
-
-  let container = createElement('div', 'game-page');
+  gameTimer.start(gameInfo.updateTime);
 
   const handleMatch = (
     /** @type {{row: Number, col: Number, value: Number}} */ firstCell,
@@ -69,30 +64,28 @@ export function renderGamePage(mode = 'classic', onRestart) {
     console.log(score);
     gameBoard.clearCell(firstCell.row, firstCell.col);
     gameBoard.clearCell(secondCell.row, secondCell.col);
+    gameInfo.updateScore(score);
     handleHints();
 
     if (score >= 100) createGameEndModal('You win!', () => onRestart(mode));
+    triggerAutosave();
+    assistTools.toggleButtonDisabled('revert', false);
   };
 
-  const gameBoard = createGameWidget(gameField, handleMatch);
-  const usesLeft = {
-    addNumbers: 10,
-    shuffle: 5,
-    eraser: 5,
-    revert: Infinity,
-    hints: 0,
-  };
+  const usesLeft = savedData
+    ? // @ts-ignore
+      createAssistToolsState(savedData.tools)
+    : createAssistToolsState();
 
   const handleAddNumbers = () => {
-    if (usesLeft['addNumbers'] <= 0) {
-      usesLeft['addNumbers'] = 0;
-      return false;
-    }
+    if (!usesLeft.checkUsesLeft('addNumbers')) return;
 
     previousState.saveState(gameField, score, {
       name: 'addNumbers',
-      usesLeft: usesLeft['addNumbers'],
+      usesLeft: usesLeft.getUsesLeft('addNumbers'),
     });
+
+    assistTools.toggleButtonDisabled('revert', false);
 
     const lastRow = gameField.length - 1;
     const [row, col] = [lastRow, gameField[lastRow].length];
@@ -101,8 +94,11 @@ export function renderGamePage(mode = 'classic', onRestart) {
 
     handleHints();
 
-    usesLeft['addNumbers'] = usesLeft['addNumbers'] - 1;
-    assistTools.updateContentButton('addNumbers', usesLeft['addNumbers']);
+    usesLeft.decrement('addNumbers');
+    assistTools.updateContentButton(
+      'addNumbers',
+      usesLeft.getUsesLeft('addNumbers')
+    );
 
     if (gameField.length > 50)
       document.body.prepend(
@@ -113,41 +109,46 @@ export function renderGamePage(mode = 'classic', onRestart) {
       getNonZeroNumbers(gameField).length === 0 &&
       !previousState.pair
     )
-      createGameEndModal('You lost!', () => onRestart(mode));
+      createGameEndModal('You lost!', () => onRestart(mode)); 
+    triggerAutosave();
+
+    if (usesLeft.getUsesLeft('addNumbers') > 0) return;
+    assistTools.toggleButtonDisabled('addNumbers', true);
   };
 
   const handleShuffle = () => {
-    if (usesLeft['shuffle'] <= 0) {
-      usesLeft['shuffle'] = 0;
-      return false;
-    }
+    if (!usesLeft.checkUsesLeft('shuffle')) return;
 
     previousState.saveState(gameField, score, {
       name: 'shuffle',
-      usesLeft: usesLeft['shuffle'],
+      usesLeft: usesLeft.getUsesLeft('shuffle'),
     });
+
+    assistTools.toggleButtonDisabled('revert', false);
 
     shuffleField(gameField);
     gameBoard.updateCellValues();
 
     handleHints();
 
-    usesLeft['shuffle'] = usesLeft['shuffle'] - 1;
-    assistTools.updateContentButton('shuffle', usesLeft['shuffle']);
+    usesLeft.decrement('shuffle');
+    assistTools.updateContentButton('shuffle', usesLeft.getUsesLeft('shuffle'));
     if (
       hints === 0 &&
       getNonZeroNumbers(gameField).length === 0 &&
       !previousState.pair
     )
-      createGameEndModal('You lost!', () => onRestart(mode));
+      createGameEndModal('You lost!', () => onRestart(mode)); 
+    triggerAutosave();
+
+    if (usesLeft.checkUsesLeft('shuffle')) return;
+    assistTools.toggleButtonDisabled('shuffle', true);
+
     return true;
   };
 
   const handleEraser = () => {
-    if (usesLeft['eraser'] <= 0) {
-      usesLeft['eraser'] = 0;
-      return false;
-    }
+    if (!usesLeft.checkUsesLeft('eraser')) return;
 
     const firstCell = gameBoard.getFirstChosenCell();
     if (!firstCell) return false;
@@ -156,29 +157,39 @@ export function renderGamePage(mode = 'classic', onRestart) {
     previousState.saveState(
       gameField,
       score,
-      { name: 'eraser', usesLeft: usesLeft['eraser'] },
+      { name: 'eraser', usesLeft: usesLeft.getUsesLeft('eraser') },
       {
         firstCell: { row: i, col: j, value: gameField[i][j] },
         secondCell: null,
       }
     );
+
+    assistTools.toggleButtonDisabled('revert', false);
+
     removeNumber(i, j, gameField);
     gameBoard.clearCell(i, j);
 
     handleHints();
 
-    usesLeft['eraser'] = usesLeft['eraser'] - 1;
-    assistTools.updateContentButton('eraser', usesLeft['eraser']);
+    usesLeft.decrement('eraser');
+    assistTools.updateContentButton('eraser', usesLeft.getUsesLeft('eraser'));
+    triggerAutosave();
+
+    assistTools.toggleButtonDisabled('eraser', true);
+    if (usesLeft.checkUsesLeft('eraser')) return;
+    assistTools.toggleButtonDisabled('eraser', true);
+
     return true;
   };
 
   const handleRevert = () => {
-    if (!previousState.field) return;
-    mutateMatrix(gameField, previousState.field);
+    const previousGameState = previousState.getState();
+    if (!previousGameState.field) return;
+    mutateMatrix(gameField, previousGameState.field);
 
-    const button = previousState.button;
-    const firstCell = previousState.pair?.firstCell;
-    const secondCell = previousState.pair?.secondCell;
+    const button = previousGameState.button;
+    const firstCell = previousGameState.pair?.firstCell;
+    const secondCell = previousGameState.pair?.secondCell;
 
     if (button) {
       if (button.name === 'addNumbers') {
@@ -193,8 +204,12 @@ export function renderGamePage(mode = 'classic', onRestart) {
           firstCell.value
         );
       }
-      usesLeft[button.name] = button.usesLeft;
+      usesLeft.setUsesLeft(button.name, button.usesLeft);
       assistTools.updateContentButton(button.name, button.usesLeft);
+
+      if (button.name !== 'eraser' && usesLeft.getUsesLeft(button.name) === 1) {
+        assistTools.toggleButtonDisabled(button.name, false);
+      }
     } else if (firstCell && secondCell) {
       gameBoard.returnCellNumber(firstCell.row, firstCell.col, firstCell.value);
       gameBoard.returnCellNumber(
@@ -204,9 +219,13 @@ export function renderGamePage(mode = 'classic', onRestart) {
       );
     }
 
-    score = previousState.score;
+    score = previousGameState.score;
+    gameInfo.updateScore(score);
     handleHints();
     previousState.clearState();
+    triggerAutosave();
+
+    assistTools.toggleButtonDisabled('revert', true);
   };
 
   const handlers = {
@@ -217,16 +236,42 @@ export function renderGamePage(mode = 'classic', onRestart) {
     hints: null,
   };
 
-  const assistTools = createAssistToolsWidget(usesLeft, handlers);
-  container.append(assistTools.element, gameBoard.element);
+  const assistTools = createAssistToolsWidget(
+    usesLeft.getAllUsesLeft(),
+    handlers
+  );
+  const gameBoard = createGameWidget(gameField, handleMatch, (isDisable) => {
+    if (!usesLeft.checkUsesLeft('eraser')) return;
+    assistTools.toggleButtonDisabled('eraser', isDisable);
+  });
+
+  container.append(gameInfo.element, gameBoard.element, assistTools.element);
 
   function handleHints() {
     hints = findHints(gameField);
-    usesLeft['hints'] = hints;
+    usesLeft.setUsesLeft('hints', hints);
     assistTools.updateContentButton('hints', hints);
   }
 
-  handleHints();
+  function triggerAutosave() {
+    const currentState = {
+      mode: mode,
+      initialTime: gameTimer.getTime(),
+      score: score,
+      field: gameField,
+      tools: usesLeft.getAllUsesLeft(),
+      history:
+        previousState.getState() && previousState.getState().field
+          ? previousState.getState()
+          : null,
+    };
+    saveAutosave(currentState);
+  }
 
+  handleHints();
+  if (previousState.getState().field)
+    assistTools.toggleButtonDisabled('revert', false);
+  else assistTools.toggleButtonDisabled('revert', true);
+  triggerAutosave();
   return container;
 }
