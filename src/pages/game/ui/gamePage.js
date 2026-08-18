@@ -5,8 +5,8 @@ import {
 } from '@/shared/storage/gameStorage';
 import { createElement } from '@/shared/dom/createDomElem';
 import { mutateMatrix } from '@/shared/array/mutateMatrix.js';
-import { initializeGameField } from '@/entities/game';
-import { timer } from '@/entities/timer/timerLogic';
+import { initializeGameField, getNonZeroNumbers } from '@/entities/game';
+import { timer, formatTime } from '@/entities/timer/timerLogic';
 import {
   addNumbersToGrid,
   shuffleField,
@@ -17,8 +17,8 @@ import {
 } from '@/features/assistTools';
 import { getScore } from '@/features/matchCells';
 import { createGameWidget } from '@/widgets/gameBoardWidget/createGameWidget';
-import { createAssistToolsWidget } from '@/widgets/createAssistToolsWidget';
-import { createGameEndModal } from '@/widgets/gameEndModal/createGameEndModal'; 
+import { createAssistToolsWidget } from '@/widgets/assistTools/createAssistToolsWidget';
+import { createGameEndModal } from '@/widgets/gameEndModal/createGameEndModal';
 import { createGameInfo } from '@/widgets/gameInfo/createGameInfo';
 import './gamePage.scss';
 
@@ -27,7 +27,7 @@ import './gamePage.scss';
  * @param {(mode: 'classic' | 'random' | 'chaotic') => void} onRestart
  * @returns {HTMLElement}
  */
-export function renderGamePage(mode = 'classic', onRestart) { 
+export function renderGamePage(mode = 'classic', onRestart) {
   const savedData = loadAutosave();
 
   // @ts-ignore
@@ -61,15 +61,17 @@ export function renderGamePage(mode = 'classic', onRestart) {
     removeNumber(firstCell.row, firstCell.col, gameField);
     removeNumber(secondCell.row, secondCell.col, gameField);
     score += getScore(firstCell.value, secondCell.value);
-    console.log(score);
     gameBoard.clearCell(firstCell.row, firstCell.col);
     gameBoard.clearCell(secondCell.row, secondCell.col);
     gameInfo.updateScore(score);
     handleHints();
 
-    if (score >= 100) createGameEndModal('You win!', () => onRestart(mode));
     triggerAutosave();
     assistTools.toggleButtonDisabled('revert', false);
+
+    if (score >= 100) finishGame('You won!');
+    if (hints === 0 && !usesLeft.checkUsesLeft('addNumbers'))
+      finishGame('You lost!');
   };
 
   const usesLeft = savedData
@@ -100,17 +102,15 @@ export function renderGamePage(mode = 'classic', onRestart) {
       usesLeft.getUsesLeft('addNumbers')
     );
 
-    if (gameField.length > 50)
-      document.body.prepend(
-        createGameEndModal('You lost!', () => onRestart(mode))
-      );
-    if (
-      hints === 0 &&
-      getNonZeroNumbers(gameField).length === 0 &&
-      !previousState.pair
-    )
-      createGameEndModal('You lost!', () => onRestart(mode)); 
     triggerAutosave();
+
+    if (
+      gameField.length > 50 ||
+      (hints === 0 &&
+        getNonZeroNumbers(gameField).length === 0 &&
+        !previousState.getState().pair)
+    )
+      finishGame('You lost!');
 
     if (usesLeft.getUsesLeft('addNumbers') > 0) return;
     assistTools.toggleButtonDisabled('addNumbers', true);
@@ -133,13 +133,15 @@ export function renderGamePage(mode = 'classic', onRestart) {
 
     usesLeft.decrement('shuffle');
     assistTools.updateContentButton('shuffle', usesLeft.getUsesLeft('shuffle'));
+
+    triggerAutosave();
+
     if (
       hints === 0 &&
       getNonZeroNumbers(gameField).length === 0 &&
-      !previousState.pair
+      !previousState.getState().pair
     )
-      createGameEndModal('You lost!', () => onRestart(mode)); 
-    triggerAutosave();
+      finishGame('You lost!');
 
     if (usesLeft.checkUsesLeft('shuffle')) return;
     assistTools.toggleButtonDisabled('shuffle', true);
@@ -268,10 +270,25 @@ export function renderGamePage(mode = 'classic', onRestart) {
     saveAutosave(currentState);
   }
 
+  /**
+   * @param {string} message
+   */
+  function finishGame(message) {
+    clearAutosave();
+    gameTimer.stop();
+    container.prepend(
+      createGameEndModal(message, score, formatTime(gameTimer.getTime()), () =>
+        onRestart(mode)
+      )
+    );
+  }
+
   handleHints();
+
   if (previousState.getState().field)
     assistTools.toggleButtonDisabled('revert', false);
   else assistTools.toggleButtonDisabled('revert', true);
+
   triggerAutosave();
   return container;
 }

@@ -1,26 +1,34 @@
 .backdrop {
   display: flex;
   align-items: center;
-  justify-content: center;  
+  justify-content: center;
   position: fixed;
   z-index: 50;
   inset: 0;
-  background-color: #191d2acc;
-
+  background-color: var(--backdrop);
 }
 
 .modal {
-  max-width: 200px;  
+  max-width: 200px;
   background: white;
   width: 50%;
   aspect-ratio: 1 / 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-around;
+  justify-content: space-between;
   padding: 30px;
 }
 
+.modal__message {
+  font-size: 1.5rem;
+}
+
+.modal__results {
+  display: flex;
+  column-gap: 30px;
+}
+
 .no-scroll {
-  overflow: hidden;    
+  overflow: hidden;
 }

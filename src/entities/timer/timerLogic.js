@@ -1,6 +1,6 @@
 /**
  * @param {Number} initialTime
- * @returns {{start:  (onTimeChange: (arg0: string) => void) => void, stop: () => void, getTime: () => void}}
+ * @returns {{start:  (onTimeChange: (arg0: string) => void) => void, stop: () => void, getTime: () => Number}}
  */
 export function timer(initialTime) {
   /**
