@@ -1,9 +1,12 @@
 import {
-  saveAutosave,
-  loadAutosave,
-  clearAutosave,
-} from '@/shared/storage/gameStorage';
-import { createElement } from '@/shared/dom/createDomElem';
+  saveLocalAutosave,
+  loadLocalAutosave,
+  clearLocalAutosave,
+  saveSessionAutosave,
+  loadSessionAutosave,
+  clearSessionAutosave,
+} from '@/shared/storage';
+import { createElement } from '@/shared/dom';
 import { mutateMatrix } from '@/shared/array/mutateMatrix.js';
 import { initializeGameField, getNonZeroNumbers } from '@/entities/game';
 import { timer, formatTime } from '@/entities/timer/timerLogic';
@@ -16,10 +19,12 @@ import {
   createAssistToolsState,
 } from '@/features/assistTools';
 import { getScore } from '@/features/matchCells';
+import { renderGameMenuBtn } from '@/features/openGameMenu';
 import { createGameWidget } from '@/widgets/gameBoardWidget/createGameWidget';
 import { createAssistToolsWidget } from '@/widgets/assistTools/createAssistToolsWidget';
 import { createGameEndModal } from '@/widgets/gameEndModal/createGameEndModal';
 import { createGameInfo } from '@/widgets/gameInfo/createGameInfo';
+import { renderGameMenu } from '@/widgets/gameMenuModal/gameMenu';
 import './gamePage.scss';
 
 /**
@@ -28,7 +33,7 @@ import './gamePage.scss';
  * @returns {HTMLElement}
  */
 export function renderGamePage(mode = 'classic', onRestart) {
-  const savedData = loadAutosave();
+  const savedData = loadLocalAutosave() ?? loadSessionAutosave();
 
   // @ts-ignore
   mode = savedData ? savedData.mode : mode;
@@ -47,6 +52,26 @@ export function renderGamePage(mode = 'classic', onRestart) {
     const h = savedData.history;
     previousState.saveState(h.field, h.score, h.button, h.pair);
   }
+  const gameMenuBtn = renderGameMenuBtn(() => {
+    gameTimer.stop();
+    gameMenu.toggleMenu(true);
+  });
+
+  const gameMenu = renderGameMenu(
+    () => {
+      clearSessionAutosave();
+      clearLocalAutosave();
+      gameTimer.stop();
+      onRestart(mode);
+    },
+    () => triggerAutosave(true),
+    () => {
+      clearSessionAutosave();
+      gameTimer.stop();
+      onRestart(mode);
+    },
+    () => gameTimer.start(gameInfo.updateTime)
+  );
 
   const container = createElement('div', 'game-page');
   const gameInfo = createGameInfo(mode, score);
@@ -247,7 +272,14 @@ export function renderGamePage(mode = 'classic', onRestart) {
     assistTools.toggleButtonDisabled('eraser', isDisable);
   });
 
-  container.append(gameInfo.element, gameBoard.element, assistTools.element);
+  const assistGameMenuBtns = createElement('div', 'tools-and-button-container');
+  assistGameMenuBtns.append(assistTools.element, gameMenuBtn);
+  container.append(
+    gameMenu.element,
+    gameInfo.element,
+    gameBoard.element,
+    assistGameMenuBtns
+  );
 
   function handleHints() {
     hints = findHints(gameField);
@@ -255,7 +287,7 @@ export function renderGamePage(mode = 'classic', onRestart) {
     assistTools.updateContentButton('hints', hints);
   }
 
-  function triggerAutosave() {
+  function triggerAutosave(isLocalStorage = false) {
     const currentState = {
       mode: mode,
       initialTime: gameTimer.getTime(),
@@ -267,14 +299,16 @@ export function renderGamePage(mode = 'classic', onRestart) {
           ? previousState.getState()
           : null,
     };
-    saveAutosave(currentState);
+    saveSessionAutosave(currentState);
+    if (isLocalStorage) saveLocalAutosave(currentState);
   }
 
   /**
    * @param {string} message
    */
   function finishGame(message) {
-    clearAutosave();
+    clearLocalAutosave();
+    clearSessionAutosave();
     gameTimer.stop();
     container.prepend(
       createGameEndModal(message, score, formatTime(gameTimer.getTime()), () =>

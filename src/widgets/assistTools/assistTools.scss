@@ -1,16 +1,3 @@
-.assist-tools {
-  position: sticky;
-  bottom: var(--main-padding);
-  left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-
-  @media (max-width: 628px) {
-    bottom: 10px;
-  }
-}
-
 .assist-tools__content {
   display: flex;
   gap: 5px;

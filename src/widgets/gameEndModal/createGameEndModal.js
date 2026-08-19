@@ -1,5 +1,5 @@
 import { createElement } from '@/shared/dom/createDomElem';
-import { renderResetBtn } from '@/features/resetGame/ui/resetBtn';
+import { renderControlBtn } from '@/features/controlGame';
 import './gameEndModal.scss';
 
 /**
@@ -23,7 +23,7 @@ export function createGameEndModal(message, finalScore, timer, onClick) {
   );
   const timerElem = createElement('span', 'modal__timer', `Time: ${timer}`);
   gameOutput.append(scoreElem, timerElem);
-  const resetBtn = renderResetBtn(onClick);
+  const resetBtn = renderControlBtn('Reset', onClick);
 
   modal.append(messageElem, gameOutput, resetBtn);
   backdrop.append(modal);

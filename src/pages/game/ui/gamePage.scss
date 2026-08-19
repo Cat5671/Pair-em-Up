@@ -7,3 +7,21 @@
     padding-inline: 10px;
   }
 }
+
+.tools-and-button-container {
+  position: sticky;
+  bottom: var(--main-padding);
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  @media (max-width: 628px) {
+    bottom: 10px;
+  }
+
+  @media (max-width: 500px) {
+    justify-content: space-between;
+  }
+}

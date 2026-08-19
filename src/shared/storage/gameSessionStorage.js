@@ -3,7 +3,7 @@ const AUTOSAVE_KEY = 'number_match_autosave';
 /**
  * @param {Object} gameState
  */
-export function saveAutosave(gameState) {
+export function saveSessionAutosave(gameState) {
   try {
     sessionStorage.setItem(AUTOSAVE_KEY, JSON.stringify(gameState));
   } catch (e) {
@@ -14,7 +14,7 @@ export function saveAutosave(gameState) {
 /**
  * @returns {Object | null}
  */
-export function loadAutosave() {
+export function loadSessionAutosave() {
   try {
     const data = sessionStorage.getItem(AUTOSAVE_KEY);
     return data ? JSON.parse(data) : null;
@@ -24,6 +24,6 @@ export function loadAutosave() {
   }
 }
 
-export function clearAutosave() {
+export function clearSessionAutosave() {
   sessionStorage.removeItem(AUTOSAVE_KEY);
 }
