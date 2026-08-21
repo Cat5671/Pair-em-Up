@@ -1,0 +1,35 @@
+.mode-selection {
+  height: 100%;
+  display: grid;
+  align-items: center;
+}
+
+.mode-selection__title {
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.mode-selection__container {
+  display: grid;
+  justify-content: center;
+}
+
+.mode-selection__container {
+  display: grid;
+  row-gap: 10px;
+}
+
+.back-to-start-btn {
+  align-self: flex-end;
+  justify-self: end;
+  padding: 10px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  cursor: pointer;
+}
+
+.back-to-start-btn__icon {
+  display: block;
+  height: 16px;
+}

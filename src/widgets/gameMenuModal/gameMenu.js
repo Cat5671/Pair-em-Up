@@ -1,5 +1,5 @@
 import { createElement } from '@/shared/dom';
-import { loadLocalAutosave } from '@/shared/storage';
+import { loadLocalStorage } from '@/shared/storage';
 import { renderControlBtn } from '@/features/controlGame';
 import './gameMenu.scss';
 
@@ -8,8 +8,15 @@ import './gameMenu.scss';
  * @param {() => void} onSave
  * @param {() => void} onContinue
  * @param {() => void} onReturnToGame
+ * @param {() => void} onReturnToStartPage
  */
-export function renderGameMenu(onReset, onSave, onContinue, onReturnToGame) {
+export function renderGameMenu(
+  onReset,
+  onSave,
+  onContinue,
+  onReturnToGame,
+  onReturnToStartPage
+) {
   const backdrop = createElement('div', 'game-menu-backdrop');
   const modal = createElement('div', 'game-menu-modal');
 
@@ -20,7 +27,7 @@ export function renderGameMenu(onReset, onSave, onContinue, onReturnToGame) {
   const resetBtn = renderControlBtn('Reset', onReset);
 
   const continueBtn = renderControlBtn('Continue', onContinue);
-  if (loadLocalAutosave()) {
+  if (loadLocalStorage('game')) {
     continueBtn.hidden = false;
   } else continueBtn.hidden = true;
 
@@ -38,8 +45,12 @@ export function renderGameMenu(onReset, onSave, onContinue, onReturnToGame) {
     toggleMenu(false);
     onReturnToGame();
   });
+  const backToStartPage = renderControlBtn(
+    'Return to start',
+    onReturnToStartPage
+  );
 
-  navigationBtns.append(backToGame);
+  navigationBtns.append(backToStartPage, backToGame);
 
   modal.append(controlBtns, navigationBtns);
 

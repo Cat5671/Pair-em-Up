@@ -29,6 +29,11 @@
   column-gap: 30px;
 }
 
+.btns-container {
+  display: grid;
+  row-gap: 5px;
+}
+
 .no-scroll {
   overflow: hidden;
 }

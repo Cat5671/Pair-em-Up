@@ -1,7 +1,7 @@
 import {
-  saveLocalAutosave,
-  loadLocalAutosave,
-  clearLocalAutosave,
+  saveLocalStorage,
+  loadLocalStorage,
+  clearLocalStorage,
   saveSessionAutosave,
   loadSessionAutosave,
   clearSessionAutosave,
@@ -30,10 +30,15 @@ import './gamePage.scss';
 /**
  * @param {'classic' | 'random' | 'chaotic'} mode
  * @param {(mode: 'classic' | 'random' | 'chaotic') => void} onRestart
+ * @param {() => void} onReturnToStartPage
  * @returns {HTMLElement}
  */
-export function renderGamePage(mode = 'classic', onRestart) {
-  const savedData = loadLocalAutosave() ?? loadSessionAutosave();
+export function renderGamePage(
+  onRestart,
+  onReturnToStartPage,
+  mode = 'classic'
+) {
+  const savedData = loadSessionAutosave() ?? loadLocalStorage('game');
 
   // @ts-ignore
   mode = savedData ? savedData.mode : mode;
@@ -60,7 +65,7 @@ export function renderGamePage(mode = 'classic', onRestart) {
   const gameMenu = renderGameMenu(
     () => {
       clearSessionAutosave();
-      clearLocalAutosave();
+      clearLocalStorage('game');
       gameTimer.stop();
       onRestart(mode);
     },
@@ -70,7 +75,11 @@ export function renderGamePage(mode = 'classic', onRestart) {
       gameTimer.stop();
       onRestart(mode);
     },
-    () => gameTimer.start(gameInfo.updateTime)
+    () => gameTimer.start(gameInfo.updateTime),
+    () => {
+      clearSessionAutosave();
+      onReturnToStartPage();
+    }
   );
 
   const container = createElement('div', 'game-page');
@@ -300,19 +309,23 @@ export function renderGamePage(mode = 'classic', onRestart) {
           : null,
     };
     saveSessionAutosave(currentState);
-    if (isLocalStorage) saveLocalAutosave(currentState);
+    if (isLocalStorage) saveLocalStorage('game', currentState);
   }
 
   /**
    * @param {string} message
    */
   function finishGame(message) {
-    clearLocalAutosave();
+    clearLocalStorage('game');
     clearSessionAutosave();
     gameTimer.stop();
     container.prepend(
-      createGameEndModal(message, score, formatTime(gameTimer.getTime()), () =>
-        onRestart(mode)
+      createGameEndModal(
+        message,
+        score,
+        formatTime(gameTimer.getTime()),
+        () => onRestart(mode),
+        onReturnToStartPage
       )
     );
   }

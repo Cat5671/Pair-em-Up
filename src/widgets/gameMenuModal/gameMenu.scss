@@ -13,9 +13,11 @@
 
 .game-menu-modal {
   display: grid;
+  row-gap: 10px;
   justify-content: center;
   align-content: space-between;
-  max-width: 200px;
+  max-width: 246px;
+  min-width: 200px;
   background: white;
   width: 50%;
   aspect-ratio: 1 / 1;
@@ -26,4 +28,9 @@
   display: grid;
   row-gap: 5px;
   align-self: end;
+}
+
+.navigation-btns {
+  display: grid;
+  row-gap: 5px;
 }

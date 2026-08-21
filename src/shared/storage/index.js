@@ -4,7 +4,7 @@ export {
   clearSessionAutosave,
 } from './gameSessionStorage.js';
 export {
-  saveLocalAutosave,
-  loadLocalAutosave,
-  clearLocalAutosave,
+  saveLocalStorage,
+  loadLocalStorage,
+  clearLocalStorage,
 } from './gameLocalStorage.js';

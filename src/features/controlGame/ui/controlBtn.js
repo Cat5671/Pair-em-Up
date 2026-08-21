@@ -2,7 +2,7 @@ import { createElement } from '@/shared/dom/createDomElem';
 import './controlBtn.scss';
 
 /**
- * @param {'Reset' | 'Save' | 'Continue' | 'Return to game'} btnName
+ * @param {String} btnName
  * @param {() => void} onClick
  */
 export function renderControlBtn(btnName, onClick) {

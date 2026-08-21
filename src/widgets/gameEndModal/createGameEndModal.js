@@ -4,12 +4,19 @@ import './gameEndModal.scss';
 
 /**
  * @param {String} message
- * @param {() => void} onClick
+ * @param {() => void} onReset
+ * @param {() => void} onReturnToStart
  * @param {String} finalScore
  * @param {String} timer
  * @returns {HTMLElement}
  */
-export function createGameEndModal(message, finalScore, timer, onClick) {
+export function createGameEndModal(
+  message,
+  finalScore,
+  timer,
+  onReset,
+  onReturnToStart
+) {
   document.body.classList.add('no-scroll');
   const backdrop = createElement('div', 'backdrop');
   const modal = createElement('div', 'modal');
@@ -23,9 +30,14 @@ export function createGameEndModal(message, finalScore, timer, onClick) {
   );
   const timerElem = createElement('span', 'modal__timer', `Time: ${timer}`);
   gameOutput.append(scoreElem, timerElem);
-  const resetBtn = renderControlBtn('Reset', onClick);
 
-  modal.append(messageElem, gameOutput, resetBtn);
+  const btnsContainer = createElement('div', 'btns-container');
+  const resetBtn = renderControlBtn('Reset', onReset);
+  const returnToStartBtn = renderControlBtn('Return to start', onReturnToStart);
+
+  btnsContainer.append(resetBtn, returnToStartBtn);
+
+  modal.append(messageElem, gameOutput, btnsContainer);
   backdrop.append(modal);
   return backdrop;
 }

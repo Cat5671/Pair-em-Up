@@ -1,0 +1,28 @@
+.start-page {
+  height: 100%;
+  position: relative;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+}
+
+.start-page__title {
+  font-size: 2.5rem;
+}
+
+.author-credit {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+}
+
+.author-credit__icon {
+  height: 24px;
+  width: 24px;
+}
+
+.control-buttons {
+  align-self: flex-start;
+  display: grid;
+  row-gap: 10px;
+}

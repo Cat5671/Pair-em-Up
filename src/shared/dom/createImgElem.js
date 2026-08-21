@@ -5,6 +5,7 @@
 export function createImgElement(src, alt, className = '') {
   const img = document.createElement('img');
   img.src = src;
+  img.alt = alt;
   img.classList.add(className);
   return img;
 }
